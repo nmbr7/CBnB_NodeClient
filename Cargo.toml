@@ -1,0 +1,8 @@
+[package]
+name = "node_client"
+version = "0.1.0"
+authors = ["nmbr7 <suhailr7@ymail.com>"]
+edition = "2018"
+
+[dependencies]
+sysinfo = "0.10.3"

@@ -1,21 +1,27 @@
+extern crate dotenv;
+extern crate uuid;
+
 mod api;
+mod message;
+mod sys_stat;
 
 use api::{client_main, server_main};
-//use std::env;
+use message::Message;
+use std::env;
 use std::sync::mpsc;
-//use std::time::Duration;
 use std::thread;
-mod sys_stat;
+use std::time::Duration;
+use sys_stat::GetStat;
 
 fn main() -> () {
     let (client_tx, client_rx) = mpsc::channel();
     let (server_tx, server_rx) = mpsc::channel();
 
-//    let args: Vec<String> = env::args().collect();
-//    if args.len() < 2{
-//        panic!("Enter Port No");
-//    } 
-//    let addr = format!("127.0.0.1:{}", args[1]);
+    //    let args: Vec<String> = env::args().collect();
+    //    if args.len() < 2{
+    //        panic!("Enter Port No");
+    //    }
+    //    let addr = format!("127.0.0.1:{}", args[1]);
     let addr = format!("0.0.0.0:7777");
 
     //Spawn Server Thread
@@ -27,10 +33,25 @@ fn main() -> () {
         client_main(client_rx);
     });
 
-    let server_ip = String::from("172.28.5.1");
-    let server_port = String::from("7778");
-    let addr = format!("{}:{}",server_ip,server_port);
-    client_tx.send(addr).unwrap();
+    //Spawn system status thread
+    let client_sys_stat_tx = mpsc::Sender::clone(&client_tx);
+    //let node_uuid = Uuid::new_v4().to_string();
+    let _sys_stat_thread = thread::spawn(move || {
+        let mut stat = sys_stat::Resources::new();
+        let msg = Message::<sys_stat::Resources>::register(stat.clone());
+        //let msg = format!("{}_:_{}",node_uuid,msg_core);
+        client_tx.send(msg.clone()).unwrap();
+
+        loop {
+            thread::sleep(Duration::from_secs(5));
+            let mut stat = stat.update_stat();
+            let msgu = Message::<sys_stat::StatUpdate>::update(stat.clone());
+            client_tx.send(msgu.clone()).unwrap();
+        }
+    });
+
+    //use a domain instead or the proxy address lookup
+    //client_tx.send(addr).unwrap();
 
     //for i in 1..5 {
     loop {
@@ -38,13 +59,13 @@ fn main() -> () {
         match received {
             Ok(s) => {
                 println!("Received from Core Server: {}", s);
-   //             thread::sleep(Duration::from_secs(1));
-   //             let addr = format!("127.0.0.1:7770");
-   //             client_tx.send(addr).unwrap();
+                //             thread::sleep(Duration::from_secs(1));
+                //             let addr = format!("127.0.0.1:7770");
+                //             client_tx.send(addr).unwrap();
             }
             Err(_) => (),
         };
-      //  break;
+        //  break;
     }
     //_client_thread.join().unwrap();
     //_server_thread.join().unwrap();

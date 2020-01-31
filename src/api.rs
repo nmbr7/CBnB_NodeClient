@@ -1,58 +1,58 @@
+use dotenv::dotenv;
+use std::env;
 use std::io::prelude::*;
 use std::net::TcpListener;
 use std::net::TcpStream;
 use std::str;
 use std::sync::mpsc;
 use std::thread;
-
+use std::time::{Duration, Instant};
 
 fn server_handler(mut stream: TcpStream, server_dup_tx: mpsc::Sender<String>) -> () {
     //println!("{:?} and {:?}",stream,server_dup_tx);
     let mut buffer = [0; 512];
-    stream.read(&mut buffer).unwrap();
-
-    let get = b"New NodeClient Registered";
-    if buffer.starts_with(get) {
-        println!("recieved");
-        server_dup_tx
-            .send(format!(
-                "{:?}",
-                str::from_utf8(&buffer)
-                    .unwrap()
-                    .split("--")
-                    .collect::<Vec<&str>>()[0]
-            ))
-            .unwrap();
-    } else {
-        server_dup_tx
-            .send(format!(
-                "{:?}",
-                str::from_utf8(&buffer)
-                    .unwrap()
-                    .split("--")
-                    .collect::<Vec<&str>>()[0]
-            ))
-            .unwrap();
-    }
+    //let now = Instant::now();
+    let no = stream.read(&mut buffer).unwrap();
+    //let secs = now.elapsed().as_secs_f64();
+    //println!("Speed : {} Mbps ",(bytes_recvd as f64/((1024*1024) as f64))/(secs as f64));
+    /*
+        let get = b"New NodeClient Registered";
+        if buffer.starts_with(get) {
+            println!("recieved");
+            server_dup_tx
+                .send(format!(
+                    "{:?}",
+                    str::from_utf8(&buffer[0..no]).unwrap()
+                ))
+                .unwrap();
+        } else {
+            server_dup_tx
+                .send(format!(
+                    "{:?}",
+                    str::from_utf8(&buffer[0..no]).unwrap()
+                ))
+                .unwrap();
+        }
+    */
 }
 
-
-fn client_handler(mut stream: TcpStream) -> () {
-    let get = b"[[Register Node]]--";
-    stream.write(get).unwrap();
+fn client_handler(mut stream: TcpStream, msg: String) -> () {
+    //let get = b"[[Register Node]]--";
+    //println!("{}",msg);
+    stream.write(msg.as_bytes()).unwrap();
     stream.flush().unwrap();
 
     let mut buffer = [0; 512];
-    stream.read(&mut buffer).unwrap();
+    let now = Instant::now();
+    let no = stream.read(&mut buffer).unwrap();
+    let secs = now.elapsed().as_secs_f64();
+    /* println!(
+        "Speed : {} Mbps ",
+        (bytes_recvd as f64 / ((1024 * 1024) as f64)) / (secs as f64)
+    );*/
     let get = b"New NodeClient Registered--";
     if buffer.starts_with(get) {
-        println!(
-            "Recieved - {}",
-            str::from_utf8(&buffer)
-                .unwrap()
-                .split("--")
-                .collect::<Vec<&str>>()[0]
-        );
+        println!("Recieved - {}", str::from_utf8(&buffer[0..no]).unwrap());
         // server_dup_tx.send(format!("{:?}", str::from_utf8(&buffer).unwrap())).unwrap();
     }
     //println!("{:?}",stream);
@@ -74,12 +74,21 @@ pub fn server_main(server_tx: mpsc::Sender<String>, addr: String) -> () {
 }
 
 pub fn client_main(client_rx: mpsc::Receiver<String>) -> () {
+    dotenv().ok();
+    let run_mode = env::var("RUN_MODE").expect("RUN_MODE not set");
+    let server_ip = match run_mode.as_str() {
+        "TEST" => String::from("172.28.5.1"),
+        "DEV" => String::from("127.0.0.1"),
+        _ => panic!("Run mode not set"),
+    };
+    let server_port = String::from("7778");
+    let addr = format!("{}:{}", server_ip, server_port);
     //let client_dup_rx = mpsc::Sender::clone(&client_rx);
     println!("Node Client waiting for message requests to be sent to the core server.. ");
     for received in client_rx {
-        let stream = TcpStream::connect(received).unwrap();
+        let stream = TcpStream::connect(&addr).unwrap();
         thread::spawn(move || {
-            client_handler(stream);
+            client_handler(stream, received);
         });
     }
 }

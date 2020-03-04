@@ -15,47 +15,19 @@ fn server_handler(mut stream: TcpStream, server_dup_tx: mpsc::Sender<String>) ->
     let no = stream.read(&mut buffer).unwrap();
     //let secs = now.elapsed().as_secs_f64();
     //println!("Speed : {} Mbps ",(bytes_recvd as f64/((1024*1024) as f64))/(secs as f64));
-    /*
-        let get = b"New NodeClient Registered";
-        if buffer.starts_with(get) {
-            println!("recieved");
-            server_dup_tx
-                .send(format!(
-                    "{:?}",
-                    str::from_utf8(&buffer[0..no]).unwrap()
-                ))
-                .unwrap();
-        } else {
-            server_dup_tx
-                .send(format!(
-                    "{:?}",
-                    str::from_utf8(&buffer[0..no]).unwrap()
-                ))
-                .unwrap();
-        }
-    */
 }
 
 fn client_handler(mut stream: TcpStream, msg: String) -> () {
-    //let get = b"[[Register Node]]--";
     //println!("{}",msg);
     stream.write(msg.as_bytes()).unwrap();
     stream.flush().unwrap();
+    /*
+        let mut buffer = [0; 512];
+        let now = Instant::now();
+        let no = stream.read(&mut buffer).unwrap();
+        let secs = now.elapsed().as_secs_f64();
 
-    let mut buffer = [0; 512];
-    let now = Instant::now();
-    let no = stream.read(&mut buffer).unwrap();
-    let secs = now.elapsed().as_secs_f64();
-    /* println!(
-        "Speed : {} Mbps ",
-        (bytes_recvd as f64 / ((1024 * 1024) as f64)) / (secs as f64)
-    );*/
-    let get = b"New NodeClient Registered--";
-    if buffer.starts_with(get) {
-        println!("Recieved - {}", str::from_utf8(&buffer[0..no]).unwrap());
-        // server_dup_tx.send(format!("{:?}", str::from_utf8(&buffer).unwrap())).unwrap();
-    }
-    //println!("{:?}",stream);
+    */
 }
 
 pub fn server_main(server_tx: mpsc::Sender<String>, addr: String) -> () {
@@ -75,6 +47,9 @@ pub fn server_main(server_tx: mpsc::Sender<String>, addr: String) -> () {
 
 pub fn client_main(client_rx: mpsc::Receiver<String>) -> () {
     dotenv().ok();
+
+    // TODO Create a config file  to handle all the setup
+
     let run_mode = env::var("RUN_MODE").expect("RUN_MODE not set");
     let server_ip = match run_mode.as_str() {
         "TEST" => String::from("172.28.5.1"),

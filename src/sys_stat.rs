@@ -60,11 +60,8 @@ pub struct StatUpdate {
     mem_available: String,
     net: NetInfo,
     uptime: String,
-    //ram: u64,
     //cpu_frequency: f32,
     //core_count: u9,
-    //net_speed_up: u64,
-    //net_speed_down: f32,
     //disk_storage: f32,
     //gpu: bool,
 }

@@ -54,8 +54,8 @@ fn fetch(path: String) -> Vec<String> {
 #[derive(Debug, Clone, Serialize)]
 pub struct StatUpdate {
     uuid: String,
-    cpu_usage: String,
-    mem_usage: (String, String),
+    pub cpu_usage: String,
+    pub mem_usage: (String, String),
     mem_free: String,
     mem_available: String,
     net: NetInfo,
@@ -71,8 +71,8 @@ pub struct StatUpdate {
 #[derive(Debug, Clone, Serialize)]
 pub struct Resources {
     uuid: String,
-    cpu: CpuInfo,
-    mem: MemInfo,
+    pub cpu: CpuInfo,
+    pub mem: MemInfo,
     net: NetInfo,
     uptime: String,
     //cpu_frequency: f32,
@@ -131,7 +131,7 @@ struct CpuModel {
 
 // Struct to store the cpu details of the system - output similar to lscpu
 #[derive(Debug, Clone, Serialize)]
-struct CpuInfo {
+pub struct CpuInfo {
     //arch: String,
     //op_model: String,
     //byte_order: String,
@@ -139,7 +139,7 @@ struct CpuInfo {
     model: String,
     cputime: (i64, i64),
     //virtualization: String,
-    usage: String,
+    pub usage: String,
 }
 
 impl CpuInfo {
@@ -322,9 +322,9 @@ impl GetStat for NetInfo {
 
 //############################################
 #[derive(Debug, Clone, Serialize)]
-struct MemInfo {
-    usage: (String, String),
-    total: String,
+pub struct MemInfo {
+    pub usage: (String, String),
+    pub total: String,
     //used: String,
     free: String,
     available: String,

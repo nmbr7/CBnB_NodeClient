@@ -1,19 +1,26 @@
 extern crate dotenv;
+extern crate librsless;
 extern crate uuid;
+
+use std::process::Command;
 
 mod api;
 mod message;
+mod service;
 mod sys_stat;
 
 use api::{client_main, server_main};
-use message::Message;
+use dotenv::dotenv;
+use message::NodeMessage;
 use std::env;
+use std::io::prelude::*;
 use std::sync::mpsc;
 use std::thread;
 use std::time::Duration;
 use sys_stat::GetStat;
 
 fn main() -> () {
+    dotenv().ok();
     let (client_tx, client_rx) = mpsc::channel();
     let (server_tx, server_rx) = mpsc::channel();
 
@@ -32,13 +39,74 @@ fn main() -> () {
     let client_sys_stat_tx = mpsc::Sender::clone(&client_tx);
     let _sys_stat_thread = thread::spawn(move || {
         let mut stat = sys_stat::Resources::new();
-        let msg = Message::<sys_stat::Resources>::register(stat.clone());
+
+        let run_mode = env::var("RUN_MODE").expect("RUN_MODE not set");
+        match run_mode.as_str() {
+            "TEST" => {
+                let memtotal = std::str::from_utf8(
+                    &Command::new("scripts/memlimit.sh")
+                        .output()
+                        .expect("Error")
+                        .stdout,
+                )
+                .unwrap()
+                .to_string();
+                let cpuuse = std::str::from_utf8(
+                    &Command::new("scripts/cpuusage.sh")
+                        .output()
+                        .expect("Error")
+                        .stdout,
+                )
+                .unwrap()
+                .to_string();
+                let memuse = std::str::from_utf8(
+                    &Command::new("scripts/memusage.sh")
+                        .output()
+                        .expect("Error")
+                        .stdout,
+                )
+                .unwrap()
+                .to_string();
+                stat.mem.total = format!("{}", cpuuse);
+                stat.cpu.usage = format!("{:.5}", cpuuse);
+                stat.mem.usage.1 = format!("{:.5}", memuse);
+            }
+            "DEV" => {}
+            _ => panic!("Run mode not set"),
+        };
+
+        let msg = NodeMessage::register(stat.clone());
         client_tx.send(msg.clone()).unwrap();
 
         loop {
             thread::sleep(Duration::from_secs(5));
             let mut stat = stat.update_stat();
-            let msgu = Message::<sys_stat::StatUpdate>::update(stat.clone());
+            println!("{:?}", stat);
+            match run_mode.as_str() {
+                "DEV" => {
+                    let cpuuse = std::str::from_utf8(
+                        &Command::new("scripts/cpuusage.sh")
+                            .output()
+                            .expect("Error")
+                            .stdout,
+                    )
+                    .unwrap()
+                    .to_string();
+                    let memuse = std::str::from_utf8(
+                        &Command::new("scripts/memusage.sh")
+                            .output()
+                            .expect("Error")
+                            .stdout,
+                    )
+                    .unwrap()
+                    .to_string();
+                    stat.cpu_usage = format!("{:.5}", cpuuse);
+                    stat.mem_usage.1 = format!("{:.5}", memuse);
+                }
+                "TEST" => {}
+                _ => panic!("Run mode not set"),
+            };
+            let msgu = NodeMessage::update(stat.clone());
             client_tx.send(msgu.clone()).unwrap();
         }
     });

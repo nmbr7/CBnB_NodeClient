@@ -1,4 +1,5 @@
 extern crate dotenv;
+
 extern crate librsless;
 extern crate uuid;
 
@@ -44,36 +45,37 @@ fn main() -> () {
         match run_mode.as_str() {
             "TEST" => {
                 let memtotal = std::str::from_utf8(
-                    &Command::new("scripts/memlimit.sh")
+                    &Command::new("/node_client/scripts/memlimit.sh")
                         .output()
                         .expect("Error")
                         .stdout,
                 )
-                .unwrap()
+                .unwrap().trim_matches('\n')
                 .to_string();
                 let cpuuse = std::str::from_utf8(
-                    &Command::new("scripts/cpuusage.sh")
+                    &Command::new("/node_client/scripts/cpuusage.sh")
                         .output()
                         .expect("Error")
                         .stdout,
                 )
-                .unwrap()
+                .unwrap().trim_matches('\n')
                 .to_string();
                 let memuse = std::str::from_utf8(
-                    &Command::new("scripts/memusage.sh")
+                    &Command::new("/node_client/scripts/memusage.sh")
                         .output()
                         .expect("Error")
                         .stdout,
                 )
-                .unwrap()
+                .unwrap().trim_matches('\n')
                 .to_string();
-                stat.mem.total = format!("{}", cpuuse);
-                stat.cpu.usage = format!("{:.5}", cpuuse);
-                stat.mem.usage.1 = format!("{:.5}", memuse);
+                stat.mem.total = format!("{}", memtotal).parse().unwrap();
+                stat.cpu.usage = format!("{:.5}", cpuuse).parse().unwrap();
+                stat.mem.usage.1 = format!("{:.5}", memuse).parse().unwrap();
             }
             "DEV" => {}
             _ => panic!("Run mode not set"),
         };
+        println!("{:?}", stat);
 
         let msg = NodeMessage::register(stat.clone());
         client_tx.send(msg.clone()).unwrap();
@@ -81,31 +83,31 @@ fn main() -> () {
         loop {
             thread::sleep(Duration::from_secs(5));
             let mut stat = stat.update_stat();
-            println!("{:?}", stat);
             match run_mode.as_str() {
-                "DEV" => {
+                "TEST" => {
                     let cpuuse = std::str::from_utf8(
-                        &Command::new("scripts/cpuusage.sh")
+                        &Command::new("/node_client/scripts/cpuusage.sh")
                             .output()
                             .expect("Error")
                             .stdout,
                     )
-                    .unwrap()
+                    .unwrap().trim_matches('\n')
                     .to_string();
                     let memuse = std::str::from_utf8(
-                        &Command::new("scripts/memusage.sh")
+                        &Command::new("/node_client/scripts/memusage.sh")
                             .output()
                             .expect("Error")
                             .stdout,
                     )
-                    .unwrap()
+                    .unwrap().trim_matches('\n')
                     .to_string();
-                    stat.cpu_usage = format!("{:.5}", cpuuse);
-                    stat.mem_usage.1 = format!("{:.5}", memuse);
+                    stat.cpu_usage = format!("{:.5}", cpuuse).parse().unwrap();
+                    stat.mem_usage.1 = format!("{:.5}", memuse).parse().unwrap();
                 }
-                "TEST" => {}
+                "DEV" => {}
                 _ => panic!("Run mode not set"),
             };
+            println!("{:?}", stat);
             let msgu = NodeMessage::update(stat.clone());
             client_tx.send(msgu.clone()).unwrap();
         }

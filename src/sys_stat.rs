@@ -54,10 +54,10 @@ fn fetch(path: String) -> Vec<String> {
 #[derive(Debug, Clone, Serialize)]
 pub struct StatUpdate {
     uuid: String,
-    pub cpu_usage: String,
-    pub mem_usage: (String, String),
-    mem_free: String,
-    mem_available: String,
+    pub cpu_usage: f64,
+    pub mem_usage: (f64, f64),
+    mem_free: f64,
+    mem_available: f64,
     net: NetInfo,
     uptime: String,
     //cpu_frequency: f32,
@@ -139,7 +139,7 @@ pub struct CpuInfo {
     model: String,
     cputime: (i64, i64),
     //virtualization: String,
-    pub usage: String,
+    pub usage: f64,
 }
 
 impl CpuInfo {
@@ -178,7 +178,7 @@ impl GetStat for CpuInfo {
         Self {
             model: cpumodel,
             cputime: (total_time, idel_time),
-            usage: format!("{:.2}", c_usage),
+            usage: format!("{:.2}", c_usage).parse().unwrap(),
         }
     }
 
@@ -189,7 +189,7 @@ impl GetStat for CpuInfo {
             * (1.0 - ((idel_time - oldidel_time) as f64 / (total_time - oldtotal_time) as f64));
 
         self.cputime = (total_time, idel_time);
-        self.usage = format!("{:.2}", c_usage);
+        self.usage = format!("{:.2}", c_usage).parse().unwrap();
     }
 }
 
@@ -198,12 +198,12 @@ impl GetStat for CpuInfo {
 struct NetInfo {
     //interfaces: String,
     current_interface: String,
-    speed: (String, String),
+    speed: (f64, f64),
     //ip: String,
 }
 
 impl NetInfo {
-    fn bandwidth(c_iface: String) -> (String, String) {
+    fn bandwidth(c_iface: String) -> (f64, f64) {
         // To calculate  bandwidth by downloading a file
         /*
         let mut stream = TcpStream::connect("212.183.159.230:80").unwrap();
@@ -214,7 +214,7 @@ impl NetInfo {
         let header = format!("GET {} HTTP/1.0\r\nHost: {}\r\n\r\n", testpath, testhost);
         stream.write_all(header.as_bytes()).unwrap();
         */
-        fn byt(iface: String) -> (i64, i64) {
+        fn byt(iface: String) -> (f64, f64) {
             let f = fetch(format!("/proc/net/dev"));
             let bytes = f
                 .into_iter()
@@ -226,8 +226,8 @@ impl NetInfo {
                 })
                 .last()
                 .unwrap();
-            let rxs: i64 = bytes.split_whitespace().nth(1).unwrap().parse().unwrap();
-            let txs: i64 = bytes.split_whitespace().nth(10).unwrap().parse().unwrap();
+            let rxs: f64 = bytes.split_whitespace().nth(1).unwrap().parse().unwrap();
+            let txs: f64 = bytes.split_whitespace().nth(10).unwrap().parse().unwrap();
             (rxs, txs)
         }
 
@@ -244,7 +244,7 @@ impl NetInfo {
             "{:.5}",
             ((((t2 - t1) as f64) / (1024 * 1024) as f64) / sec as f64)
         );
-        (rx, tx)
+        (rx.parse().unwrap(), tx.parse().unwrap())
 
         // To calculate  bandwidth by downloading a file ,Buffering
         /*loop {
@@ -323,11 +323,11 @@ impl GetStat for NetInfo {
 //############################################
 #[derive(Debug, Clone, Serialize)]
 pub struct MemInfo {
-    pub usage: (String, String),
-    pub total: String,
+    pub usage: (f64, f64),
+    pub total: f64,
     //used: String,
-    free: String,
-    available: String,
+    free: f64,
+    available: f64,
     //swap: String,
 }
 
@@ -348,12 +348,12 @@ impl GetStat for MemInfo {
                 / total_mem);
         Self {
             usage: (
-                format!("{:.3}", total_mem_usage),
-                format!("{:.3}", mem_usage_ncb),
+                format!("{:.3}", total_mem_usage).parse().unwrap(),
+                format!("{:.3}", mem_usage_ncb).parse().unwrap(),
             ),
-            total: format!("{:.3}", (total_mem / (1024 * 1024) as f64)),
-            free: format!("{:.3}", (free_mem / (1024 * 1024) as f64)),
-            available: format!("{:.3}", (available_mem / (1024 * 1024) as f64)),
+            total: format!("{:.3}", (total_mem / (1024 * 1024) as f64)).parse().unwrap(),
+            free: format!("{:.3}", (free_mem / (1024 * 1024) as f64)).parse().unwrap(),
+            available: format!("{:.3}", (available_mem / (1024 * 1024) as f64)).parse().unwrap(),
         }
     }
 
@@ -371,11 +371,11 @@ impl GetStat for MemInfo {
             * ((total_mem - free_mem - (cache_mem + sreclaim_mem - shmem_mem + buffer_mem))
                 / total_mem);
         self.usage = (
-            format!("{:.3}", total_mem_usage),
-            format!("{:.3}", mem_usage_ncb),
+            format!("{:.3}", total_mem_usage).parse().unwrap(),
+            format!("{:.3}", mem_usage_ncb).parse().unwrap(),
         );
-        self.free = format!("{:.3}", (free_mem / (1024 * 1024) as f64));
-        self.available = format!("{:.3}", (available_mem / (1024 * 1024) as f64));
+        self.free = format!("{:.3}", (free_mem / (1024 * 1024) as f64)).parse().unwrap();
+        self.available = format!("{:.3}", (available_mem / (1024 * 1024) as f64)).parse().unwrap();
     }
 }
 

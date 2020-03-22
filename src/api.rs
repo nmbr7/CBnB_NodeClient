@@ -149,8 +149,8 @@ pub fn client_main(client_rx: mpsc::Receiver<String>) -> () {
 
     let run_mode = env::var("RUN_MODE").expect("RUN_MODE not set");
     let server_ip = match run_mode.as_str() {
-        "TEST" => String::from("172.28.5.77"),
-        "DEV" => String::from("127.0.0.1"),
+        "DEV" => String::from("172.28.5.77"),
+        "TEST" => String::from("127.0.0.1"),
         _ => panic!("Run mode not set"),
     };
     let server_port = String::from("7779");

@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 
 pub mod faas;
-pub mod storage;
 pub mod paas;
-
+pub mod storage;
 
 /*
 usee chrono::pr;
@@ -22,7 +21,6 @@ pub struct Storage {
 
 pub struct Paas {
     pub created_on: String,
-
 }
 
 pub struct Fas {
@@ -43,17 +41,38 @@ struct Fas<'a> {
 }
 */
 pub struct MetaData {
-    instance_count : i32,
-    last_updated: (String,String),
+    pub instance_count: i32,
+    pub last_updated: (String, String),
 }
 
 pub struct ServiceData<T> {
-    metadata: MetaData,
-    instances: HashMap<String,T>,
+    pub metadata: MetaData,
+    pub instances: HashMap<String, T>,
 }
 
 pub struct Service {
-    pub paas: ServiceData<Paas>, 
+    pub paas: ServiceData<Paas>,
     pub storage: ServiceData<Storage>,
     pub faas: ServiceData<Fas>,
+}
+impl<T> ServiceData<T> {
+    fn new() -> Self {
+        Self {
+            metadata: MetaData {
+                instance_count: 0,
+                last_updated: ("".to_string(), "".to_string()),
+            },
+            instances: HashMap::new(),
+        }
+    }
+}
+
+impl Service {
+    pub fn new() -> Self {
+        Self {
+            paas: ServiceData::new(),
+            storage: ServiceData::new(),
+            faas: ServiceData::new(),
+        }
+    }
 }

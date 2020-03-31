@@ -7,6 +7,7 @@ use std::net::TcpListener;
 use std::net::TcpStream;
 use std::str;
 use std::sync::mpsc;
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -15,7 +16,11 @@ use crate::service::{Fas, Service};
 use librsless::msg_parser;
 use std::collections::HashMap;
 
-fn server_handler(mut stream: TcpStream, server_dup_tx: mpsc::Sender<String>) -> () {
+fn server_handler(
+    mut stream: TcpStream,
+    server_dup_tx: mpsc::Sender<String>,
+    service: Arc<Mutex<Service>>,
+) -> () {
     //println!("{:?} and {:?}",stream,server_dup_tx);
     //let now = Instant::now();
     //println!("{:?} and {:?}",stream,server_dup_tx);
@@ -40,18 +45,17 @@ fn server_handler(mut stream: TcpStream, server_dup_tx: mpsc::Sender<String>) ->
 
                     stream.write_all("".as_bytes()).unwrap();
                     stream.flush().unwrap();
-                    /*let FasService = Fas {
-                    };
-                    */
                     /*
-                    pub struct Service {
-                        pub vms: HashMap<String, Vm>,
-                        pub storages: HashMap<String, Storage>,
-                        pub faas: HashMap<String, Fas>,
+                    let faas_instance =  struct Fas {
+                        pub invocations: i32,
+                        pub frequency: i32,
+                        pub created_on: String,
+                        pub status1: String, //published or not
                     }*/
-                    // let Services = Service {
-
-                    // }
+                    {
+                        let mut service_instance = service.lock().unwrap();
+                        service_instance.faas.metadata.instance_count += 1;
+                    }
                 }
                 ServiceType::Storage => {
                     match json_data["msg_type"].as_str().unwrap() {
@@ -60,11 +64,20 @@ fn server_handler(mut stream: TcpStream, server_dup_tx: mpsc::Sender<String>) ->
                             let size = &json_data["size"];
                             let block = &json_data["blockno"];
 
+                            {
+                                let mut service_instance = service.lock().unwrap();
+                                service_instance.faas.metadata.instance_count += 1;
+                            }
+
                             //seek to the file and read the chunk
                         }
                         "write" => {
-                            //write to any free block and return the details
+                            {
+                                let mut service_instance = service.lock().unwrap();
+                                service_instance.faas.metadata.instance_count += 1;
+                            }
 
+                            //write to any free block and return the details
                             let data = json!({
                                 "blockno": "no",
                                 "offset": "offset",
@@ -89,8 +102,12 @@ fn server_handler(mut stream: TcpStream, server_dup_tx: mpsc::Sender<String>) ->
                             // Generate a public/private key pair for the user PaaS instance
                             // Send the public key and user uuid to the VM
                             // Create a new user of the respective uuid
-
                             // Return the private key to the PaaS user
+
+                            {
+                                let mut service_instance = service.lock().unwrap();
+                                service_instance.faas.metadata.instance_count += 1;
+                            }
                         }
                         _ => {}
                     }
@@ -98,18 +115,16 @@ fn server_handler(mut stream: TcpStream, server_dup_tx: mpsc::Sender<String>) ->
             }
         }
 
-        ServiceMsgType::SERVICEUPDATE => {
-            match recv_data.service_type {
-                ServiceType::Faas => {
-                    let server_res = msg_parser(&mut stream, json_data);
+        ServiceMsgType::SERVICEUPDATE => match recv_data.service_type {
+            ServiceType::Faas => {
+                let server_res = msg_parser(&mut stream, json_data);
 
-                    stream.write_all("".as_bytes()).unwrap();
-                    stream.flush().unwrap();
-                }
-                ServiceType::Paas => {}
-                ServiceType::Storage => {}
+                stream.write_all("".as_bytes()).unwrap();
+                stream.flush().unwrap();
             }
-        }
+            ServiceType::Paas => {}
+            ServiceType::Storage => {}
+        },
     }
 
     //let secs = now.elapsed().as_secs_f64();
@@ -129,7 +144,11 @@ fn client_handler(mut stream: TcpStream, msg: String) -> () {
     */
 }
 
-pub fn server_main(server_tx: mpsc::Sender<String>, addr: String) -> () {
+pub fn server_main(
+    server_tx: mpsc::Sender<String>,
+    addr: String,
+    service: Arc<Mutex<Service>>,
+) -> () {
     let listener = TcpListener::bind(addr).unwrap();
     println!("Node Server waiting for incomming messages.. ");
     /*let mut node_services = Service {
@@ -144,9 +163,11 @@ pub fn server_main(server_tx: mpsc::Sender<String>, addr: String) -> () {
         // different file in a page
         let stream = stream.unwrap();
         let server_dup_tx = mpsc::Sender::clone(&server_tx);
+
+        let services = Arc::clone(&service);
         //Spawn server request handler thread
         thread::spawn(move || {
-            server_handler(stream, server_dup_tx);
+            server_handler(stream, server_dup_tx, services);
         });
     }
 }

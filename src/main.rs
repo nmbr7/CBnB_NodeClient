@@ -16,9 +16,12 @@ use message::NodeMessage;
 use std::env;
 use std::io::prelude::*;
 use std::sync::mpsc;
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 use sys_stat::GetStat;
+
+use service::{Fas, Service};
 
 fn main() -> () {
     dotenv().ok();
@@ -27,9 +30,11 @@ fn main() -> () {
 
     let addr = format!("0.0.0.0:7777");
 
+    let service_root = Arc::new(Mutex::new(Service::new()));
     //Spawn Server Thread
+    let services = Arc::clone(&service_root);
     let _server_thread = thread::spawn(move || {
-        server_main(server_tx, addr);
+        server_main(server_tx, addr, services);
     });
     //Spawn Client Thread
     let _client_thread = thread::spawn(move || {

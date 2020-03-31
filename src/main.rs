@@ -50,7 +50,8 @@ fn main() -> () {
                         .expect("Error")
                         .stdout,
                 )
-                .unwrap().trim_matches('\n')
+                .unwrap()
+                .trim_matches('\n')
                 .to_string();
                 let cpuuse = std::str::from_utf8(
                     &Command::new("/node_client/scripts/cpuusage.sh")
@@ -58,7 +59,8 @@ fn main() -> () {
                         .expect("Error")
                         .stdout,
                 )
-                .unwrap().trim_matches('\n')
+                .unwrap()
+                .trim_matches('\n')
                 .to_string();
                 let memuse = std::str::from_utf8(
                     &Command::new("/node_client/scripts/memusage.sh")
@@ -66,7 +68,8 @@ fn main() -> () {
                         .expect("Error")
                         .stdout,
                 )
-                .unwrap().trim_matches('\n')
+                .unwrap()
+                .trim_matches('\n')
                 .to_string();
                 stat.mem.total = format!("{}", memtotal).parse().unwrap();
                 stat.cpu.usage = format!("{:.5}", cpuuse).parse().unwrap();
@@ -91,7 +94,8 @@ fn main() -> () {
                             .expect("Error")
                             .stdout,
                     )
-                    .unwrap().trim_matches('\n')
+                    .unwrap()
+                    .trim_matches('\n')
                     .to_string();
                     let memuse = std::str::from_utf8(
                         &Command::new("/node_client/scripts/memusage.sh")
@@ -99,7 +103,8 @@ fn main() -> () {
                             .expect("Error")
                             .stdout,
                     )
-                    .unwrap().trim_matches('\n')
+                    .unwrap()
+                    .trim_matches('\n')
                     .to_string();
                     stat.cpu_usage = format!("{:.5}", cpuuse).parse().unwrap();
                     stat.mem_usage.1 = format!("{:.5}", memuse).parse().unwrap();

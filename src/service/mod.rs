@@ -2,24 +2,36 @@ use std::collections::HashMap;
 
 pub mod faas;
 pub mod storage;
+pub mod paas;
 
-pub struct Vm {
-    pub service_id: String,
-}
+
+/*
+usee chrono::pr;
+let  utc = Utc::now().timestamp().to_string().to_owned();
+let st = Utc.datetime_from_str(utc.as_str(), "%s");
+println!("{}",st.unwrap());
+
+ */
+
 pub struct Storage {
-    pub service_id: String,
+    pub block: i32,
+    pub created_on: String,
+    pub offsets: Vec<i32>,
+    pub frequency: i32,
 }
-pub struct Docker {
-    pub service_id: String,
+
+pub struct Paas {
+    pub created_on: String,
+
 }
 
 pub struct Fas {
-    pub service_id: String,
-    //pub invocations: i32,
-    //pub frequency: i32,
-    //pub creating_date: i32,
-    //pub stat: &'a str, //published or not
+    pub invocations: i32,
+    pub frequency: i32,
+    pub created_on: String,
+    pub status1: String, //published or not
 }
+
 /*
 struct Fas<'a> {
     pub service_id: &'a str,
@@ -30,10 +42,18 @@ struct Fas<'a> {
     //pub stat: &'a str, //published or not
 }
 */
+pub struct MetaData {
+    instance_count : i32,
+    last_updated: (String,String),
+}
+
+pub struct ServiceData<T> {
+    metadata: MetaData,
+    instances: HashMap<String,T>,
+}
 
 pub struct Service {
-    pub vms: HashMap<String, Vm>,
-    pub storages: HashMap<String, Storage>,
-    pub dockerapps: HashMap<String, Docker>,
-    pub faas: HashMap<String, Fas>,
+    pub paas: ServiceData<Paas>, 
+    pub storage: ServiceData<Storage>,
+    pub faas: ServiceData<Fas>,
 }

@@ -1,5 +1,5 @@
 use dotenv::dotenv;
-use serde_json::{ json, Value};
+use serde_json::{json, Value};
 
 use std::env;
 use std::io::prelude::*;
@@ -14,7 +14,6 @@ use crate::message::{ServiceMessage, ServiceMsgType, ServiceType};
 use crate::service::{Fas, Service};
 use librsless::msg_parser;
 use std::collections::HashMap;
-
 
 fn server_handler(mut stream: TcpStream, server_dup_tx: mpsc::Sender<String>) -> () {
     //println!("{:?} and {:?}",stream,server_dup_tx);
@@ -41,15 +40,13 @@ fn server_handler(mut stream: TcpStream, server_dup_tx: mpsc::Sender<String>) ->
 
                     stream.write_all("".as_bytes()).unwrap();
                     stream.flush().unwrap();
-                    let FasService = Fas {
-                        service_id: String::from("uuid"),
+                    /*let FasService = Fas {
                     };
-
+                    */
                     /*
                     pub struct Service {
                         pub vms: HashMap<String, Vm>,
                         pub storages: HashMap<String, Storage>,
-                        pub dockersapps: HashMap<String, Docker>,
                         pub faas: HashMap<String, Fas>,
                     }*/
                     // let Services = Service {
@@ -57,7 +54,7 @@ fn server_handler(mut stream: TcpStream, server_dup_tx: mpsc::Sender<String>) ->
                     // }
                 }
                 ServiceType::Storage => {
-                    match json_data["msg_type"].as_str().unwrap(){
+                    match json_data["msg_type"].as_str().unwrap() {
                         "read" => {
                             let offset = &json_data["offset"];
                             let size = &json_data["size"];
@@ -66,7 +63,6 @@ fn server_handler(mut stream: TcpStream, server_dup_tx: mpsc::Sender<String>) ->
                             //seek to the file and read the chunk
                         }
                         "write" => {
-
                             //write to any free block and return the details
 
                             let data = json!({
@@ -74,31 +70,44 @@ fn server_handler(mut stream: TcpStream, server_dup_tx: mpsc::Sender<String>) ->
                                 "offset": "offset",
                                 "c_hash": "hash",
                                 "block_hash": "bhash",
-                            }).to_string();
+                            })
+                            .to_string();
                             stream.write_all(data.as_bytes()).unwrap();
                             stream.flush().unwrap();
                         }
-                        _ => {},
+                        _ => {}
                     }
                 }
-                // Currently the docker deamon runs as root and users can see all the images in VM 
+                // Currently the docker deamon runs as root and users can see all the images in VM
                 // TODO Restrict user from access the root docker deamon
                 ServiceType::Paas => {
-                    match json_data["msg_type"].as_str().unwrap(){
+                    match json_data["msg_type"].as_str().unwrap() {
                         "start" => {
                             let lang = &json_data["lang"];
                             // SSH to VM using the private key
 
-                            // Generate a public/private key pair for the user PaaS instance 
+                            // Generate a public/private key pair for the user PaaS instance
                             // Send the public key and user uuid to the VM
                             // Create a new user of the respective uuid
 
                             // Return the private key to the PaaS user
-
                         }
-                        _ => {},
+                        _ => {}
                     }
                 }
+            }
+        }
+
+        ServiceMsgType::SERVICEUPDATE => {
+            match recv_data.service_type {
+                ServiceType::Faas => {
+                    let server_res = msg_parser(&mut stream, json_data);
+
+                    stream.write_all("".as_bytes()).unwrap();
+                    stream.flush().unwrap();
+                }
+                ServiceType::Paas => {}
+                ServiceType::Storage => {}
             }
         }
     }
@@ -123,12 +132,12 @@ fn client_handler(mut stream: TcpStream, msg: String) -> () {
 pub fn server_main(server_tx: mpsc::Sender<String>, addr: String) -> () {
     let listener = TcpListener::bind(addr).unwrap();
     println!("Node Server waiting for incomming messages.. ");
-    let mut node_services = Service{
-        vms: HashMap::new(),
+    /*let mut node_services = Service {
         storages: HashMap::new(),
-        dockerapps: HashMap::new(),
         faas: HashMap::new(),
+        paas: HashMap::new(),
     };
+    */
 
     for stream in listener.incoming() {
         // In case of browser there may be multiple requests for fetching
@@ -149,8 +158,8 @@ pub fn client_main(client_rx: mpsc::Receiver<String>) -> () {
 
     let run_mode = env::var("RUN_MODE").expect("RUN_MODE not set");
     let server_ip = match run_mode.as_str() {
-        "DEV" => String::from("172.28.5.77"),
-        "TEST" => String::from("127.0.0.1"),
+        "TEST" => String::from("172.28.5.77"),
+        "DEV" => String::from("127.0.0.1"),
         _ => panic!("Run mode not set"),
     };
     let server_port = String::from("7779");

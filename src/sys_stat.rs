@@ -351,9 +351,15 @@ impl GetStat for MemInfo {
                 format!("{:.3}", total_mem_usage).parse().unwrap(),
                 format!("{:.3}", mem_usage_ncb).parse().unwrap(),
             ),
-            total: format!("{:.3}", (total_mem / (1024 * 1024) as f64)).parse().unwrap(),
-            free: format!("{:.3}", (free_mem / (1024 * 1024) as f64)).parse().unwrap(),
-            available: format!("{:.3}", (available_mem / (1024 * 1024) as f64)).parse().unwrap(),
+            total: format!("{:.3}", (total_mem / (1024 * 1024) as f64))
+                .parse()
+                .unwrap(),
+            free: format!("{:.3}", (free_mem / (1024 * 1024) as f64))
+                .parse()
+                .unwrap(),
+            available: format!("{:.3}", (available_mem / (1024 * 1024) as f64))
+                .parse()
+                .unwrap(),
         }
     }
 
@@ -374,8 +380,12 @@ impl GetStat for MemInfo {
             format!("{:.3}", total_mem_usage).parse().unwrap(),
             format!("{:.3}", mem_usage_ncb).parse().unwrap(),
         );
-        self.free = format!("{:.3}", (free_mem / (1024 * 1024) as f64)).parse().unwrap();
-        self.available = format!("{:.3}", (available_mem / (1024 * 1024) as f64)).parse().unwrap();
+        self.free = format!("{:.3}", (free_mem / (1024 * 1024) as f64))
+            .parse()
+            .unwrap();
+        self.available = format!("{:.3}", (available_mem / (1024 * 1024) as f64))
+            .parse()
+            .unwrap();
     }
 }
 

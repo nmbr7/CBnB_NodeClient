@@ -16,7 +16,7 @@ pub enum ServiceType {
 pub enum ServiceMsgType {
     //  UPDATE_SYSTAT,
     SERVICEINIT,
-    //  SERVICEUPDATE,
+    SERVICEUPDATE,
     //SERVICESTART,
     //SERVICESTOP
 }

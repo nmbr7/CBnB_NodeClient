@@ -83,7 +83,7 @@ fn main() -> () {
             "DEV" => {}
             _ => panic!("Run mode not set"),
         };
-        println!("{:?}", stat);
+        // println!("{:?}", stat);
 
         let msg = NodeMessage::register(stat.clone());
         client_tx.send(msg.clone()).unwrap();
@@ -117,7 +117,7 @@ fn main() -> () {
                 "DEV" => {}
                 _ => panic!("Run mode not set"),
             };
-            println!("{:?}", stat);
+            // println!("{:?}", stat);
             let msgu = NodeMessage::update(stat.clone());
             client_tx.send(msgu.clone()).unwrap();
         }

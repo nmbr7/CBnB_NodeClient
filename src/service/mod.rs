@@ -41,7 +41,8 @@ struct Fas<'a> {
 }
 */
 pub struct MetaData {
-    pub instance_count: i32,
+    pub current_block_offset: u64,
+    pub instance_count: u32,
     pub last_updated: (String, String),
 }
 
@@ -59,6 +60,7 @@ impl<T> ServiceData<T> {
     fn new() -> Self {
         Self {
             metadata: MetaData {
+                current_block_offset: 0,
                 instance_count: 0,
                 last_updated: ("".to_string(), "".to_string()),
             },

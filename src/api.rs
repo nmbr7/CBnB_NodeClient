@@ -1,4 +1,5 @@
 use dotenv::dotenv;
+use log::{info, warn};
 use serde_json::{json, Value};
 
 use std::env;
@@ -43,6 +44,7 @@ fn server_handler(
     let recv_data: ServiceMessage = serde_json::from_slice(&buffer[0..no]).unwrap();
     let json_data = serde_json::from_str(&recv_data.content.as_str()).unwrap();
     //println!("{:?}", json_data);
+    //TODO Check the proxy uuid
 
     match recv_data.msg_type {
         ServiceMsgType::SERVICEINIT => {
@@ -207,7 +209,7 @@ pub fn server_main(
     service: Arc<Mutex<Service>>,
 ) -> () {
     let listener = TcpListener::bind(addr).unwrap();
-    println!("Node Server waiting for incomming messages.. ");
+    info!("Server setup done, waiting for incoming messages");
     /*let mut node_services = Service {
         storages: HashMap::new(),
         faas: HashMap::new(),
@@ -243,7 +245,7 @@ pub fn client_main(client_rx: mpsc::Receiver<String>) -> () {
     let server_port = String::from("7779");
     let addr = format!("{}:{}", server_ip, server_port);
     //let client_dup_rx = mpsc::Sender::clone(&client_rx);
-    println!("Node Client waiting for message requests to be sent to the core server.. ");
+    info!("Client waiting for messages to be sent to the server.");
     for received in client_rx {
         let stream = TcpStream::connect(&addr).unwrap();
         thread::spawn(move || {

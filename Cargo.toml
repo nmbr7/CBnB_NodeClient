@@ -9,4 +9,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
 uuid = { version = "0.8", features = ["serde", "v4"] }
 dotenv = "0.10"
+log = "*"
+env_logger = "*"
+
 rsless = { git = "https://github.com/nmbr7/rsless" }

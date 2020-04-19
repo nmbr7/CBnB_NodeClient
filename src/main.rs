@@ -1,6 +1,7 @@
 extern crate dotenv;
 
 extern crate librsless;
+extern crate log;
 extern crate uuid;
 
 use std::process::Command;
@@ -12,6 +13,7 @@ mod sys_stat;
 
 use api::{client_main, server_main};
 use dotenv::dotenv;
+use log::{info, warn};
 use message::NodeMessage;
 use std::env;
 use std::io::prelude::*;
@@ -25,6 +27,7 @@ use service::{Fas, Service};
 
 fn main() -> () {
     dotenv().ok();
+    env_logger::init();
     let (client_tx, client_rx) = mpsc::channel();
     let (server_tx, server_rx) = mpsc::channel();
 
@@ -129,7 +132,7 @@ fn main() -> () {
         let received = server_rx.try_recv();
         match received {
             Ok(s) => {
-                println!("Received from Core Server: {}", s);
+                info!("Received from Core Server: {}", s);
                 //             thread::sleep(Duration::from_secs(1));
                 //             let addr = format!("127.0.0.1:7770");
                 //             client_tx.send(addr).unwrap();

@@ -20,7 +20,7 @@ use std::io::BufWriter;
 use std::fs::File;
 
 use crate::message::{ServiceMessage, ServiceMsgType, ServiceType};
-use crate::service::{Fas, Service};
+use crate::service::{paas::start_qemu, Fas, Service};
 use librsless::msg_parser;
 use std::collections::HashMap;
 
@@ -154,14 +154,27 @@ fn server_handler(
                 // TODO Restrict user from access the root docker deamon
                 ServiceType::Paas => {
                     match json_data["msg_type"].as_str().unwrap() {
-                        "start" => {
-                            let lang = &json_data["lang"];
+                        "new" => {
+                            //let lang = &json_data["lang"];
                             // SSH to VM using the private key
 
                             // Generate a public/private key pair for the user PaaS instance
                             // Send the public key and user uuid to the VM
                             // Create a new user of the respective uuid
                             // Return the private key to the PaaS user
+
+                            // TODO Send Msg to the qemu server to create a `new container`
+                            // Update the metadata about the app instance in the `Service Struct`
+
+                            let qemu_ip = String::from("127.0.0.1:9090");
+                            let mut qstream = TcpStream::connect(qemu_ip).unwrap();
+
+                            // TODO Decide on the msg format!
+                            let msg = json!({}).to_string();
+
+                            qstream.write_all(msg.as_bytes()).unwrap();
+                            qstream.flush();
+
 
                             {
                                 let mut service_instance = service.lock().unwrap();
@@ -184,6 +197,21 @@ fn server_handler(
             ServiceType::Paas => {}
             ServiceType::Storage => {}
         },
+        ServiceMsgType::SERVICESTART => match recv_data.service_type {
+            ServiceType::Faas => {}
+            ServiceType::Paas => {
+                match json_data["msg_type"].as_str().unwrap() {
+                    "start" => {
+                        info!("Starting Qemu");
+                        // TODO Verify the qemu image
+                        start_qemu();
+                    }
+                    _ => {}
+                }
+            }
+            ServiceType::Storage => {}
+        },
+        ServiceMsgType::SERVICESTOP => (),
     }
 
     //let secs = now.elapsed().as_secs_f64();

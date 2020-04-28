@@ -17,8 +17,7 @@ pub enum ServiceMsgType {
     //  UPDATE_SYSTAT,
     SERVICEINIT,
     SERVICEUPDATE,
-    SERVICESTART,
-    SERVICESTOP,
+    SERVICEMANAGE,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

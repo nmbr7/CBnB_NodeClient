@@ -20,7 +20,11 @@ use std::io::BufWriter;
 use std::fs::File;
 
 use crate::message::{ServiceMessage, ServiceMsgType, ServiceType};
-use crate::service::{paas::start_qemu, Fas, Service};
+use crate::service::{
+    paas::{new_app, start_qemu},
+    storage::{storage_read, storage_write},
+    Fas, Service,
+};
 use librsless::msg_parser;
 use std::collections::HashMap;
 
@@ -29,18 +33,9 @@ fn server_handler(
     server_dup_tx: mpsc::Sender<String>,
     service: Arc<Mutex<Service>>,
 ) -> () {
-    //println!("{:?} and {:?}",stream,server_dup_tx);
-    //let now = Instant::now();
-    //println!("{:?} and {:?}",stream,server_dup_tx);
     let mut buffer = [0; 100_000];
     let no = stream.read(&mut buffer).unwrap();
-    //let buf = buffer.trim_matches(char::from(0));
-    //let mut reader = BufReader::new(stream);
-    //let lines = reader.lines();
-    //let v = lines.map(|l| l.expect("Parse Fail")).collect()
 
-    //let r = format!("{}", String::from_utf8_lossy(&buffer[0..no]));
-    //let a = buffer[0..no].split("_:_").map(|l| l.to_string()).collect::<Vec<String>>();
     let recv_data: ServiceMessage = serde_json::from_slice(&buffer[0..no]).unwrap();
     let json_data = serde_json::from_str(&recv_data.content.as_str()).unwrap();
     //println!("{:?}", json_data);
@@ -69,83 +64,14 @@ fn server_handler(
                 ServiceType::Storage => {
                     match json_data["msg_type"].as_str().unwrap() {
                         "read" => {
-                            let offset = json_data["metadata"]["offset"].as_u64().unwrap();
-                            let size = json_data["metadata"]["size"].as_u64().unwrap();
-                            let index = json_data["metadata"]["index"].as_u64().unwrap();
-                            let block = json_data["metadata"]["blockno"]
-                                .as_str()
-                                .unwrap()
-                                .to_string();
-
-                            let mut file = File::open("./storage.bin").unwrap();
-
-                            let of = file.seek(SeekFrom::Start(offset)).unwrap();
-
-                            //let mut contents = vec![];
-                            let mut contents = [0 as u8; 65536];
-                            //let mut handle = file.take(size);
-
-                            let no = file.read(&mut contents).unwrap();
-                            //println!("Read {} bytes from the block file off [{}] size [{}]", no, offset, size );
-
-                            stream.write_all(&contents[0..size as usize]).unwrap();
-                            stream.flush().unwrap();
-
+                            storage_read(&mut stream, json_data);
                             /*{
                                 let mut service_instance = service.lock().unwrap();
                                 service_instance.storage.metadata.instance_count += 1;
                             }*/
-
-                            //seek to the file and read the chunk
                         }
                         "write" => {
-                            //println!("{}",json_data);
-                            let size: usize = json_data["size"].as_u64().unwrap() as usize;
-                            let file = OpenOptions::new()
-                                .append(true)
-                                .open(String::from("./storage.bin"))
-                                .unwrap();
-                            let mut fbuf = BufWriter::new(file);
-
-                            stream.write_all(String::from("OK").as_bytes()).unwrap();
-                            stream.flush().unwrap();
-
-                            let mut destbuffer = [0 as u8; 2048];
-                            let mut total = 0 as usize;
-                            let mut offset = 0 as usize;
-                            {
-                                let mut service_instance = service.lock().unwrap();
-                                loop {
-                                    let dno = stream.read(&mut destbuffer).unwrap();
-                                    total += dno;
-                                    fbuf.write_all(&destbuffer[0..dno]).unwrap();
-                                    fbuf.flush().unwrap();
-                                    if total == size {
-                                        break;
-                                    }
-                                }
-
-                                service_instance.storage.metadata.instance_count += 1;
-                                offset =
-                                    service_instance.storage.metadata.current_block_offset as usize;
-                                service_instance.storage.metadata.current_block_offset +=
-                                    total as u64;
-                                //println!("index [{}]  Read {} bytes",total, service_instance.faas.metadata.instance_count);
-                            }
-                            //println!("{}",total);
-
-                            //write to any free block and return the details
-                            let data = json!({
-                                "blockno": "no",
-                                "offset": offset,
-                                "size": total,
-                                "index": 0,
-                               // "c_hash": "hash",
-                               // "block_hash": "bhash",
-                            })
-                            .to_string();
-                            stream.write_all(data.as_bytes()).unwrap();
-                            stream.flush().unwrap();
+                            storage_write(&mut stream, json_data, service);
                         }
                         _ => {}
                     }
@@ -153,29 +79,10 @@ fn server_handler(
                 // Currently the docker deamon runs as root and users can see all the images in VM
                 // TODO Restrict user from access the root docker deamon
                 ServiceType::Paas => {
+                    // TODO handle the deployment directly between proxy and qemu rather than relaying through node
                     match json_data["msg_type"].as_str().unwrap() {
-                        "new" => {
-                            //let lang = &json_data["lang"];
-                            // SSH to VM using the private key
-
-                            // Generate a public/private key pair for the user PaaS instance
-                            // Send the public key and user uuid to the VM
-                            // Create a new user of the respective uuid
-                            // Return the private key to the PaaS user
-
-                            // TODO Send Msg to the qemu server to create a `new container`
-                            // Update the metadata about the app instance in the `Service Struct`
-
-                            let qemu_ip = String::from("127.0.0.1:9090");
-                            let mut qstream = TcpStream::connect(qemu_ip).unwrap();
-
-                            // TODO Decide on the msg format!
-                            let msg = json!({}).to_string();
-
-                            qstream.write_all(msg.as_bytes()).unwrap();
-                            qstream.flush();
-
-
+                        "deploy" => {
+                            new_app(json_data);
                             {
                                 let mut service_instance = service.lock().unwrap();
                                 service_instance.faas.metadata.instance_count += 1;
@@ -188,30 +95,36 @@ fn server_handler(
         }
 
         ServiceMsgType::SERVICEUPDATE => match recv_data.service_type {
+            // Incase of deploying the function or updating
             ServiceType::Faas => {
                 let server_res = msg_parser(&mut stream, json_data);
-
                 stream.write_all("".as_bytes()).unwrap();
                 stream.flush().unwrap();
             }
+            // Incase of updating the app version or on bug fixes
             ServiceType::Paas => {}
+
+            // Incase fo update to the file
             ServiceType::Storage => {}
         },
-        ServiceMsgType::SERVICESTART => match recv_data.service_type {
+        ServiceMsgType::SERVICEMANAGE => match recv_data.service_type {
+            // For setting up the initial faas root directory and related files
             ServiceType::Faas => {}
+            // For starting the qemu vm and setting up the qemu server
             ServiceType::Paas => {
                 match json_data["msg_type"].as_str().unwrap() {
                     "start" => {
                         info!("Starting Qemu");
                         // TODO Verify the qemu image
-                        start_qemu();
+                        let pid = start_qemu();
+                        println!("Qemu PID is {}", pid);
                     }
                     _ => {}
                 }
             }
+            // For setting up the storage related directory
             ServiceType::Storage => {}
         },
-        ServiceMsgType::SERVICESTOP => (),
     }
 
     //let secs = now.elapsed().as_secs_f64();

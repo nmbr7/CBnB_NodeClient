@@ -1,4 +1,4 @@
-use log::{info, warn};
+use log::{info, warn, debug};
 use serde_json::{json, Value};
 use std::io::prelude::*;
 use std::net::TcpStream;
@@ -18,10 +18,10 @@ pub fn start_qemu() -> u32 {
 }
 
 pub fn new_app(json_data: Value) {
-    let lang = &json_data["lang"];
+    /*let lang = &json_data["runtime"];
     let filename = &json_data["filename"];
     let fileid = &json_data["fileid"];
-
+*/
     // TODO (Maybe)
     //  SSH to VM using the private key
     //  Generate a public/private key pair for the user PaaS instance
@@ -33,14 +33,8 @@ pub fn new_app(json_data: Value) {
     // connect to qemu to Deploy new container
     let qemu_ip = String::from("127.0.0.1:9090");
     let mut qstream = TcpStream::connect(qemu_ip).unwrap();
-
-    let msg = json!({
-        "msg_type" : "deploy",
-        "lang": lang,
-        "filename": filename,
-        "fileid": fileid,
-    })
-    .to_string();
+    let msg = json_data.to_string();
+    debug!("Deploying new app: \n{}",msg);
 
     qstream.write_all(msg.as_bytes()).unwrap();
     qstream.flush().unwrap();

@@ -1,4 +1,4 @@
-use log::{info, warn};
+use log::{debug, info, warn};
 use serde_json::{json, Value};
 use std::env;
 use std::io::prelude::*;
@@ -33,11 +33,11 @@ pub fn storage_read(stream: &mut TcpStream, json_data: Value) {
     let of = file.seek(SeekFrom::Start(offset)).unwrap();
 
     //let mut contents = vec![];
-    let mut contents = [0 as u8; 65536];
+    let mut contents = [0 as u8; 1048576];
     //let mut handle = file.take(size);
 
     let no = file.read(&mut contents).unwrap();
-    //println!("Read {} bytes from the block file off [{}] size [{}]", no, offset, size );
+    debug!("Read {} bytes from the block file off [{}] size [{}]", no, offset, size );
 
     stream.write_all(&contents[0..size as usize]).unwrap();
     stream.flush().unwrap();

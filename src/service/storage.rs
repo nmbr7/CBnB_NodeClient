@@ -37,7 +37,10 @@ pub fn storage_read(stream: &mut TcpStream, json_data: Value) {
     //let mut handle = file.take(size);
 
     let no = file.read(&mut contents).unwrap();
-    debug!("Read {} bytes from the block file off [{}] size [{}]", no, offset, size );
+    debug!(
+        "Read {} bytes from the block file off [{}] size [{}]",
+        no, offset, size
+    );
 
     stream.write_all(&contents[0..size as usize]).unwrap();
     stream.flush().unwrap();

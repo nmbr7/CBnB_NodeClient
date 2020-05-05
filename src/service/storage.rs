@@ -21,7 +21,7 @@ use crate::service::Service;
 
 pub fn storage_read(stream: &mut TcpStream, json_data: Value) {
     let offset = json_data["metadata"]["offset"].as_u64().unwrap();
-    let size = json_data["metadata"]["size"].as_u64().unwrap();
+    let size = json_data["metadata"]["size"].as_u64().unwrap() as usize;
     let index = json_data["metadata"]["index"].as_u64().unwrap();
     let block = json_data["metadata"]["blockno"]
         .as_str()
@@ -32,18 +32,19 @@ pub fn storage_read(stream: &mut TcpStream, json_data: Value) {
 
     let of = file.seek(SeekFrom::Start(offset)).unwrap();
 
-    //let mut contents = vec![];
-    let mut contents = [0 as u8; 1048576];
+    let mut contents: Vec<u8> = Vec::new();
+    //let mut contents = [0 as u8; 1024240];
     //let mut handle = file.take(size);
-
-    let no = file.read(&mut contents).unwrap();
-    debug!(
-        "Read {} bytes from the block file off [{}] size [{}]",
-        no, offset, size
-    );
-
-    stream.write_all(&contents[0..size as usize]).unwrap();
+    loop{
+    let no = file.read_to_end(&mut contents).unwrap();
+    stream.write_all(&contents[0..size]).unwrap();
     stream.flush().unwrap();
+    
+    debug!(
+    "Read {} bytes from the block file off [{}] size [{}]",
+    no, offset, size
+    );
+    }
 }
 
 pub fn storage_write(stream: &mut TcpStream, json_data: Value, service: Arc<Mutex<Service>>) {
@@ -75,7 +76,7 @@ pub fn storage_write(stream: &mut TcpStream, json_data: Value, service: Arc<Mute
         service_instance.storage.metadata.instance_count += 1;
         offset = service_instance.storage.metadata.current_block_offset as usize;
         service_instance.storage.metadata.current_block_offset += total as u64;
-        //println!("index [{}]  Read {} bytes",total, service_instance.faas.metadata.instance_count);
+        debug!("index [{}]  Read {} bytes",total, service_instance.faas.metadata.instance_count);
     }
     //println!("{}",total);
 

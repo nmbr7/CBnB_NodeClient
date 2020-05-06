@@ -1,5 +1,5 @@
 use dotenv::dotenv;
-use log::{info, warn};
+use log::{debug, info, warn};
 use serde_json::{json, Value};
 
 use std::env;
@@ -38,7 +38,7 @@ fn server_handler(
 
     let recv_data: ServiceMessage = serde_json::from_slice(&buffer[0..no]).unwrap();
     let json_data = serde_json::from_str(&recv_data.content.as_str()).unwrap();
-    //println!("{:?}", json_data);
+    debug!("{:?}", json_data);
     //TODO Check the proxy uuid
 
     match recv_data.msg_type {

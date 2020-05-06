@@ -53,6 +53,13 @@ fn main() -> () {
         let run_mode = env::var("RUN_MODE").expect("RUN_MODE not set");
         match run_mode.as_str() {
             "TEST" => {
+               let a = Command::new("/root/.cargo/bin/qemuserver")
+                    .stdout(Stdio::null())
+                    .stdin(Stdio::null())
+                    .spawn()
+                    .expect("Error");
+
+
                 let memtotal = std::str::from_utf8(
                     &Command::new("/node_client/scripts/memlimit.sh")
                         .output()

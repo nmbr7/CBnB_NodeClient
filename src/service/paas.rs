@@ -3,11 +3,22 @@ use serde_json::{json, Value};
 use std::io::prelude::*;
 use std::net::TcpStream;
 use std::process::{Command, Stdio};
+use dotenv::dotenv;
+use std::env;
 
 pub fn start_qemu() -> u32 {
-    let cmd = format!("{} -M pc -m {} -smp 1 -monitor pty -nographic -hda {} -enable-kvm -drive file={},if=virtio,format=raw -net nic -net user,hostfwd=tcp:127.0.0.1:55555-:22,hostfwd=tcp:127.0.0.1:8080-:9090","qemu-system-x86_64",2048,"./xenial.img","./debian-seed.img");
-    let args = cmd.split(" ").collect::<Vec<&str>>();
 
+    dotenv().ok();
+    let run_mode = env::var("RUN_MODE").expect("RUN_MODE not set");
+    let qfolder = match run_mode.as_str() {
+        "TEST" => String::from("/qemufolder/"),
+        "DEV" => String::from("/home/number7/Desktop/PROJECTS/CloudBnB_Root/DockerInfra/qemufolder/"),
+        _ => panic!("Run mode not set"),
+    };
+
+    let cmd = format!("qemu-system-x86_64 -M pc -m 2048 -smp 4 -monitor pty -nographic -hda {qf}xenial_base.img -drive file={qf}debian-seed.img,if=virtio,format=raw -enable-kvm -netdev user,hostname=be5d9d96fd08,hostfwd=tcp::55555-:22,hostfwd=tcp:0.0.0.0:7070-:8080,id=net -device virtio-net-pci,netdev=net -vnc :0 -serial stdio",qf=qfolder);
+    let args = cmd.split(" ").collect::<Vec<&str>>();
+    println!("{:?}",cmd);
     let a = Command::new(&args[0])
         .args(&args[1..args.len()])
         .stdout(Stdio::null())
@@ -31,7 +42,7 @@ pub fn new_app(json_data: Value) {
 
     // Update the metadata about the app instance in the `Service Struct`
     // connect to qemu to Deploy new container
-    let qemu_ip = String::from("127.0.0.1:9090");
+    let qemu_ip = String::from("127.0.0.1:7070");
     let mut qstream = TcpStream::connect(qemu_ip).unwrap();
     let msg = json_data.to_string();
     debug!("Deploying new app: \n{}", msg);

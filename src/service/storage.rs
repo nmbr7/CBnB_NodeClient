@@ -35,16 +35,13 @@ pub fn storage_read(stream: &mut TcpStream, json_data: Value) {
     let mut contents: Vec<u8> = Vec::new();
     //let mut contents = [0 as u8; 1024240];
     //let mut handle = file.take(size);
-    loop{
     let no = file.read_to_end(&mut contents).unwrap();
     stream.write_all(&contents[0..size]).unwrap();
     stream.flush().unwrap();
-    
     debug!(
-    "Read {} bytes from the block file off [{}] size [{}]",
-    no, offset, size
+        "Read {} bytes from the block file off [{}] size [{}]",
+        no, offset, size
     );
-    }
 }
 
 pub fn storage_write(stream: &mut TcpStream, json_data: Value, service: Arc<Mutex<Service>>) {
@@ -76,7 +73,10 @@ pub fn storage_write(stream: &mut TcpStream, json_data: Value, service: Arc<Mute
         service_instance.storage.metadata.instance_count += 1;
         offset = service_instance.storage.metadata.current_block_offset as usize;
         service_instance.storage.metadata.current_block_offset += total as u64;
-        debug!("index [{}]  Read {} bytes",total, service_instance.faas.metadata.instance_count);
+        debug!(
+            "index [{}]  Read {} bytes",
+            total, service_instance.faas.metadata.instance_count
+        );
     }
     //println!("{}",total);
 

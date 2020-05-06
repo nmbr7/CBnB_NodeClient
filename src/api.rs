@@ -1,7 +1,7 @@
-use dotenv::dotenv;
 use log::{debug, info, warn};
 use serde_json::{json, Value};
 
+use dotenv::dotenv;
 use std::env;
 use std::io::prelude::*;
 use std::net::TcpListener;

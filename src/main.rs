@@ -4,7 +4,7 @@ extern crate librsless;
 extern crate log;
 extern crate uuid;
 
-use std::process::Command;
+use std::process::{Command,Stdio};
 
 mod api;
 mod message;

@@ -21,7 +21,7 @@ use std::fs::File;
 
 use crate::message::{ServiceMessage, ServiceMsgType, ServiceType};
 use crate::service::{
-    paas::{new_app, start_qemu},
+    paas::{app_status, new_app, start_qemu},
     storage::{storage_read, storage_write},
     Fas, Service,
 };
@@ -87,6 +87,10 @@ fn server_handler(
                                 let mut service_instance = service.lock().unwrap();
                                 service_instance.faas.metadata.instance_count += 1;
                             }
+                        }
+                        "status" => {
+                            stream.write_all(app_status(json_data).as_bytes()).unwrap();
+                            stream.flush().unwrap();
                         }
                         _ => {}
                     }

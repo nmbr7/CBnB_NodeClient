@@ -12,7 +12,7 @@ pub fn start_qemu() -> u32 {
     let qfolder = match run_mode.as_str() {
         "TEST" => String::from("/qemufolder/"),
         "DEV" => {
-            String::from("/home/number7/Desktop/PROJECTS/CloudBnB_Root/DockerInfra/qemufolder/")
+            String::from("/home/number7/Desktop/PROJECTS/CloudBnB_Root/DockerInfra/.qemufolder/")
         }
         _ => panic!("Run mode not set"),
     };
@@ -50,4 +50,24 @@ pub fn new_app(json_data: Value) {
 
     qstream.write_all(msg.as_bytes()).unwrap();
     qstream.flush().unwrap();
+}
+
+pub fn app_status(json_data: Value) -> String {
+    let tag = &json_data["appid"];
+    let filename = &json_data["filename"];
+    let fileid = &json_data["fileid"];
+    
+    let qemu_ip = String::from("127.0.0.1:7070");
+    let mut qstream = TcpStream::connect(qemu_ip).unwrap();
+
+    let msg = json_data.to_string();
+    debug!("Deploying new app: \n{}", msg);
+
+    qstream.write_all(msg.as_bytes()).unwrap();
+    qstream.flush().unwrap();
+    let mut buffer = [0; 126];
+    let no = qstream.read(&mut buffer).unwrap();
+
+    std::str::from_utf8(&buffer[0..no]).unwrap().to_string()
+
 }
